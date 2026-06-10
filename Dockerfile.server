@@ -1,0 +1,56 @@
+# ============================================
+# Stage 1: Install dependencies
+# ============================================
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat openssl
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+COPY apps/server/package.json ./apps/server/
+COPY packages/shared/package.json ./packages/shared/
+
+RUN npm ci --workspace=@ipl-auction/server --workspace=@ipl-auction/shared --include-workspace-root
+
+# ============================================
+# Stage 2: Build the application
+# ============================================
+FROM node:20-alpine AS builder
+RUN apk add --no-cache openssl
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
+
+COPY . .
+
+RUN npm run build --workspace=@ipl-auction/shared
+RUN npx prisma generate --schema=apps/server/prisma/schema.prisma
+RUN npm run build --workspace=@ipl-auction/server
+
+# ============================================
+# Stage 3: Production runner
+# ============================================
+FROM node:20-alpine AS runner
+RUN apk add --no-cache openssl dumb-init
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+RUN addgroup --system --gid 1001 expressjs
+RUN adduser --system --uid 1001 server
+
+COPY --from=builder --chown=server:expressjs /app/apps/server/dist ./dist
+COPY --from=builder --chown=server:expressjs /app/apps/server/package.json ./package.json
+COPY --from=builder --chown=server:expressjs /app/node_modules ./node_modules
+COPY --from=builder --chown=server:expressjs /app/apps/server/node_modules ./apps/server/node_modules
+COPY --from=builder --chown=server:expressjs /app/packages/shared/dist ./packages/shared/dist
+
+USER server
+
+EXPOSE 4000
+
+ENV PORT=4000
+ENV HOSTNAME="0.0.0.0"
+
+CMD ["dumb-init", "node", "dist/index.js"]

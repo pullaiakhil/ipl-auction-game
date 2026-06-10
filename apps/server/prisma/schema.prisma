@@ -1,0 +1,749 @@
+// =============================================================================
+// IPL Auction Simulator - Prisma Schema
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum Nationality {
+  INDIAN
+  OVERSEAS
+  ASSOCIATE
+}
+
+enum PlayerRole {
+  BATSMAN
+  BOWLER
+  ALL_ROUNDER
+  WICKET_KEEPER
+}
+
+enum PlayerSubRole {
+  OPENER
+  TOP_ORDER
+  MIDDLE_ORDER
+  FINISHER
+  PACE_BOWLER
+  MEDIUM_PACE_BOWLER
+  SPINNER
+  SEAM_ALL_ROUNDER
+  SPIN_ALL_ROUNDER
+  BATTING_ALL_ROUNDER
+  BOWLING_ALL_ROUNDER
+  KEEPER_BATSMAN
+}
+
+enum BattingStyle {
+  RIGHT_HANDED
+  LEFT_HANDED
+}
+
+enum BowlingStyle {
+  RIGHT_ARM_FAST
+  RIGHT_ARM_MEDIUM
+  RIGHT_ARM_MEDIUM_FAST
+  LEFT_ARM_FAST
+  LEFT_ARM_MEDIUM
+  LEFT_ARM_MEDIUM_FAST
+  RIGHT_ARM_OFF_BREAK
+  RIGHT_ARM_LEG_BREAK
+  LEFT_ARM_ORTHODOX
+  LEFT_ARM_CHINAMAN
+  SLOW_LEFT_ARM_ORTHODOX
+  RIGHT_ARM_OFF_SPIN
+  RIGHT_ARM_LEG_SPIN
+  NONE
+}
+
+enum InjuryStatus {
+  FIT
+  MINOR
+  MODERATE
+  MAJOR
+  OUT
+}
+
+enum AuctionStatus {
+  WAITING
+  LIVE
+  PAUSED
+  COMPLETED
+}
+
+enum AuctionMode {
+  MEGA
+  MINI
+  QUICK
+}
+
+enum AiDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+enum AuctionPlayerStatus {
+  UPCOMING
+  CURRENT
+  SOLD
+  UNSOLD
+  RTM
+}
+
+enum ContractType {
+  AUCTION
+  RETENTION
+  RTM
+}
+
+enum MatchType {
+  LEAGUE
+  QUALIFIER1
+  ELIMINATOR
+  QUALIFIER2
+  FINAL
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  ABANDONED
+  NO_RESULT
+}
+
+enum TossDecision {
+  BAT
+  BOWL
+}
+
+enum ExtraType {
+  WIDE
+  NO_BALL
+  BYE
+  LEG_BYE
+  PENALTY
+  NONE
+}
+
+enum WicketType {
+  BOWLED
+  CAUGHT
+  LBW
+  RUN_OUT
+  STUMPED
+  HIT_WICKET
+  CAUGHT_AND_BOWLED
+  RETIRED_HURT
+  RETIRED_OUT
+  OBSTRUCTING_THE_FIELD
+  TIMED_OUT
+  NONE
+}
+
+enum SeasonStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum AchievementType {
+  FIRST_AUCTION
+  FIRST_WIN
+  BUDGET_MASTER
+  PERFECT_SQUAD
+  UNDEFEATED
+  COMEBACK_KING
+  AUCTION_SHARK
+  BIDDING_WAR_WINNER
+  ECONOMY_EXPERT
+  MARQUEE_COLLECTOR
+  OVERSEAS_SPECIALIST
+  DOMESTIC_POWERHOUSE
+  SEASON_CHAMPION
+  TRIPLE_CROWN
+  CENTURION
+  PURPLE_CAP
+  ORANGE_CAP
+  HAT_TRICK
+  SUPER_OVER_WIN
+  CLEAN_SWEEP
+}
+
+enum ChatMessageType {
+  TEXT
+  SYSTEM
+  EMOTE
+}
+
+enum PitchType {
+  BATTING
+  BOWLING
+  BALANCED
+  TURNING
+  GREEN
+}
+
+// =============================================================================
+// AUTH MODELS (NextAuth compatible)
+// =============================================================================
+
+model User {
+  id             String    @id @default(uuid())
+  email          String?   @unique
+  name           String?
+  hashedPassword String?
+  image          String?
+  role           UserRole  @default(USER)
+  guestId        String?   @unique
+  emailVerified  DateTime?
+  totalAuctions  Int       @default(0)
+  totalWins      Int       @default(0)
+  rating         Int       @default(1000)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  auctionParticipants AuctionParticipant[]
+  hostedAuctions      AuctionRoom[]
+  chatMessages        ChatMessage[]
+  achievements        Achievement[]
+
+  @@index([email])
+  @@index([guestId])
+  @@index([rating])
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// =============================================================================
+// PLAYER & TEAM MODELS
+// =============================================================================
+
+model Player {
+  id          String      @id @default(uuid())
+  name        String
+  fullName    String
+  country     String
+  nationality Nationality
+  role        PlayerRole
+  subRole     PlayerSubRole
+
+  age          Int
+  battingStyle BattingStyle
+  bowlingStyle BowlingStyle
+
+  iplTeamHistory String[] @default([])
+  basePrice      Decimal  @db.Decimal(12, 2)
+
+  // Batting Stats
+  matches        Int     @default(0)
+  runs           Int     @default(0)
+  battingAverage Float   @default(0)
+  strikeRate     Float   @default(0)
+  hundreds       Int     @default(0)
+  fifties        Int     @default(0)
+  highestScore   Int     @default(0)
+  fours          Int     @default(0)
+  sixes          Int     @default(0)
+  notOuts        Int     @default(0)
+
+  // Bowling Stats
+  wickets           Int     @default(0)
+  bowlingAverage    Float   @default(0)
+  economy           Float   @default(0)
+  bowlingStrikeRate Float   @default(0)
+  bestBowling       String  @default("0/0")
+  fourWickets       Int     @default(0)
+  fiveWickets       Int     @default(0)
+  maidens           Int     @default(0)
+
+  // Fielding Stats
+  catches   Int @default(0)
+  stumpings Int @default(0)
+  runOuts   Int @default(0)
+
+  // Ratings (0-100)
+  overallRating  Int @default(50)
+  battingRating  Int @default(50)
+  bowlingRating  Int @default(50)
+  fieldingRating Int @default(50)
+  fitnessRating  Int @default(50)
+  formRating     Int @default(50)
+
+  // Market
+  marketDemand Int          @default(50)
+  injuryStatus InjuryStatus @default(FIT)
+
+  // Metadata
+  careerHistory Json?
+  imageUrl      String?
+  isMarquee     Boolean @default(false)
+  isCapped      Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts      PlayerContract[]
+  auctionPlayers AuctionPlayer[]
+
+  @@index([name])
+  @@index([nationality])
+  @@index([role])
+  @@index([subRole])
+  @@index([overallRating])
+  @@index([basePrice])
+  @@index([isMarquee])
+  @@index([isCapped])
+  @@index([nationality, role])
+  @@map("players")
+}
+
+model Team {
+  id             String  @id @default(uuid())
+  name           String  @unique
+  shortName      String  @unique
+  fullName       String
+  primaryColor   String
+  secondaryColor String
+  logoUrl        String?
+  homeGround     String
+  city           String
+  owner          String
+  coach          String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants AuctionParticipant[]
+
+  @@map("teams")
+}
+
+// =============================================================================
+// AUCTION MODELS
+// =============================================================================
+
+model AuctionRoom {
+  id              String        @id @default(uuid())
+  code            String        @unique @db.VarChar(6)
+  name            String
+  hostId          String
+  status          AuctionStatus @default(WAITING)
+  mode            AuctionMode   @default(MEGA)
+  purseAmount     Decimal       @default(12000) @db.Decimal(12, 2)
+  maxSquadSize    Int           @default(25)
+  minSquadSize    Int           @default(18)
+  maxOverseas     Int           @default(8)
+  timerSeconds    Int           @default(30)
+  enableAI        Boolean       @default(false)
+  aiDifficulty    AiDifficulty  @default(MEDIUM)
+  isPublic        Boolean       @default(false)
+  maxParticipants Int           @default(10)
+  currentRound    Int           @default(1)
+  currentSet      Int           @default(1)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  host         User                 @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  participants AuctionParticipant[]
+  auctionPlayers AuctionPlayer[]
+  chatMessages ChatMessage[]
+  contracts    PlayerContract[]
+  seasons      Season[]
+  analytics    Analytics[]
+
+  @@index([code])
+  @@index([hostId])
+  @@index([status])
+  @@index([isPublic, status])
+  @@map("auction_rooms")
+}
+
+model AuctionParticipant {
+  id            String   @id @default(uuid())
+  auctionRoomId String
+  userId        String?
+  teamId        String
+  isAI          Boolean  @default(false)
+  aiPersonality Json?
+  budget        Decimal  @db.Decimal(12, 2)
+  playersCount  Int      @default(0)
+  overseasCount Int      @default(0)
+  isReady       Boolean  @default(false)
+  isConnected   Boolean  @default(false)
+  joinedAt      DateTime @default(now())
+
+  auctionRoom AuctionRoom      @relation(fields: [auctionRoomId], references: [id], onDelete: Cascade)
+  user        User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  team        Team             @relation(fields: [teamId], references: [id])
+  bids        Bid[]
+  contracts   PlayerContract[]
+  squads      Squad[]
+  leagueRows  LeagueTable[]
+  analytics   Analytics[]
+
+  @@unique([auctionRoomId, userId])
+  @@unique([auctionRoomId, teamId])
+  @@index([auctionRoomId])
+  @@index([userId])
+  @@index([teamId])
+  @@map("auction_participants")
+}
+
+model AuctionPlayer {
+  id              String              @id @default(uuid())
+  auctionRoomId   String
+  playerId        String
+  setNumber       Int                 @default(1)
+  orderInSet      Int                 @default(0)
+  basePrice       Decimal             @db.Decimal(12, 2)
+  currentBid      Decimal?            @db.Decimal(12, 2)
+  highestBidderId String?
+  status          AuctionPlayerStatus @default(UPCOMING)
+  soldPrice       Decimal?            @db.Decimal(12, 2)
+  soldToId        String?
+  presentedAt     DateTime?
+  soldAt          DateTime?
+
+  auctionRoom AuctionRoom @relation(fields: [auctionRoomId], references: [id], onDelete: Cascade)
+  player      Player      @relation(fields: [playerId], references: [id])
+  bids        Bid[]
+
+  @@unique([auctionRoomId, playerId])
+  @@index([auctionRoomId, status])
+  @@index([auctionRoomId, setNumber])
+  @@index([playerId])
+  @@map("auction_players")
+}
+
+model Bid {
+  id              String   @id @default(uuid())
+  auctionPlayerId String
+  participantId   String
+  amount          Decimal  @db.Decimal(12, 2)
+  timestamp       DateTime @default(now())
+  isRTM           Boolean  @default(false)
+  isAuto          Boolean  @default(false)
+
+  auctionPlayer AuctionPlayer      @relation(fields: [auctionPlayerId], references: [id], onDelete: Cascade)
+  participant   AuctionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([auctionPlayerId])
+  @@index([participantId])
+  @@index([auctionPlayerId, amount])
+  @@map("bids")
+}
+
+model PlayerContract {
+  id            String       @id @default(uuid())
+  participantId String
+  playerId      String
+  auctionRoomId String
+  price         Decimal      @db.Decimal(12, 2)
+  contractType  ContractType @default(AUCTION)
+  createdAt     DateTime     @default(now())
+
+  participant AuctionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  player      Player             @relation(fields: [playerId], references: [id])
+  auctionRoom AuctionRoom        @relation(fields: [auctionRoomId], references: [id], onDelete: Cascade)
+
+  @@unique([auctionRoomId, playerId])
+  @@index([participantId])
+  @@index([playerId])
+  @@index([auctionRoomId])
+  @@map("player_contracts")
+}
+
+// =============================================================================
+// SQUAD MODEL
+// =============================================================================
+
+model Squad {
+  id            String  @id @default(uuid())
+  participantId String
+  auctionRoomId String
+  playingXI     Json    @default("[]")
+  captainId     String?
+  viceCaptainId String?
+  teamRating    Float   @default(0)
+  battingRating Float   @default(0)
+  bowlingRating Float   @default(0)
+  allRoundRating Float  @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participant AuctionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([participantId, auctionRoomId])
+  @@index([auctionRoomId])
+  @@map("squads")
+}
+
+// =============================================================================
+// MATCH SIMULATION MODELS
+// =============================================================================
+
+model Match {
+  id              String      @id @default(uuid())
+  seasonId        String
+  team1Id         String
+  team2Id         String
+  venue           String
+  matchType       MatchType   @default(LEAGUE)
+  matchNumber     Int
+  status          MatchStatus @default(SCHEDULED)
+  tossWinnerId    String?
+  tossDecision    TossDecision?
+  winnerId        String?
+  resultText      String?
+  team1Score      Int?
+  team1Wickets    Int?
+  team1Overs      Float?
+  team2Score      Int?
+  team2Wickets    Int?
+  team2Overs      Float?
+  playerOfMatchId String?
+  weather         String?
+  pitchType       PitchType   @default(BALANCED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  season  Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  innings Innings[]
+
+  @@index([seasonId])
+  @@index([seasonId, matchNumber])
+  @@index([status])
+  @@map("matches")
+}
+
+model Innings {
+  id             String @id @default(uuid())
+  matchId        String
+  battingTeamId  String
+  bowlingTeamId  String
+  inningsNumber  Int
+  totalRuns      Int    @default(0)
+  wickets        Int    @default(0)
+  overs          Float  @default(0)
+  extras         Int    @default(0)
+  runRate        Float  @default(0)
+  fours          Int    @default(0)
+  sixes          Int    @default(0)
+  dotBalls       Int    @default(0)
+
+  match      Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  ballEvents BallEvent[]
+
+  @@index([matchId])
+  @@index([matchId, inningsNumber])
+  @@map("innings")
+}
+
+model BallEvent {
+  id                String     @id @default(uuid())
+  inningsId         String
+  overNumber        Int
+  ballNumber        Int
+  batsmanId         String
+  bowlerId          String
+  runs              Int        @default(0)
+  extras            Int        @default(0)
+  extraType         ExtraType  @default(NONE)
+  isWicket          Boolean    @default(false)
+  wicketType        WicketType @default(NONE)
+  dismissedPlayerId String?
+  fielderId         String?
+  commentary        String?
+
+  innings Innings @relation(fields: [inningsId], references: [id], onDelete: Cascade)
+
+  @@index([inningsId])
+  @@index([inningsId, overNumber])
+  @@index([batsmanId])
+  @@index([bowlerId])
+  @@map("ball_events")
+}
+
+// =============================================================================
+// SEASON & LEAGUE MODELS
+// =============================================================================
+
+model Season {
+  id                 String       @id @default(uuid())
+  auctionRoomId      String
+  name               String
+  status             SeasonStatus @default(PENDING)
+  totalMatches       Int          @default(0)
+  currentMatchNumber Int          @default(0)
+  orangeCapId        String?
+  purpleCapId        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auctionRoom AuctionRoom  @relation(fields: [auctionRoomId], references: [id], onDelete: Cascade)
+  matches     Match[]
+  leagueTable LeagueTable[]
+
+  @@index([auctionRoomId])
+  @@index([status])
+  @@map("seasons")
+}
+
+model LeagueTable {
+  id            String @id @default(uuid())
+  seasonId      String
+  participantId String
+  played        Int    @default(0)
+  won           Int    @default(0)
+  lost          Int    @default(0)
+  noResult      Int    @default(0)
+  points        Int    @default(0)
+  netRunRate    Float  @default(0)
+  forRuns       Int    @default(0)
+  forOvers      Float  @default(0)
+  againstRuns   Int    @default(0)
+  againstOvers  Float  @default(0)
+
+  season      Season             @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  participant AuctionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, participantId])
+  @@index([seasonId])
+  @@index([seasonId, points, netRunRate])
+  @@map("league_tables")
+}
+
+// =============================================================================
+// ACHIEVEMENT MODEL
+// =============================================================================
+
+model Achievement {
+  id          String          @id @default(uuid())
+  userId      String
+  type        AchievementType
+  name        String
+  description String
+  icon        String?
+  unlockedAt  DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@map("achievements")
+}
+
+// =============================================================================
+// CHAT MODEL
+// =============================================================================
+
+model ChatMessage {
+  id            String          @id @default(uuid())
+  auctionRoomId String
+  userId        String?
+  content       String
+  type          ChatMessageType @default(TEXT)
+  createdAt     DateTime        @default(now())
+
+  auctionRoom AuctionRoom @relation(fields: [auctionRoomId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([auctionRoomId])
+  @@index([auctionRoomId, createdAt])
+  @@map("chat_messages")
+}
+
+// =============================================================================
+// ANALYTICS MODEL
+// =============================================================================
+
+model Analytics {
+  id                   String  @id @default(uuid())
+  auctionRoomId        String
+  participantId        String
+  spendingByRole       Json    @default("{}")
+  spendingByNationality Json   @default("{}")
+  avgPlayerPrice       Decimal @default(0) @db.Decimal(12, 2)
+  highestBid           Decimal @default(0) @db.Decimal(12, 2)
+  lowestBid            Decimal @default(0) @db.Decimal(12, 2)
+  totalSpent           Decimal @default(0) @db.Decimal(12, 2)
+  remainingBudget      Decimal @default(0) @db.Decimal(12, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auctionRoom AuctionRoom        @relation(fields: [auctionRoomId], references: [id], onDelete: Cascade)
+  participant AuctionParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@unique([auctionRoomId, participantId])
+  @@index([auctionRoomId])
+  @@index([participantId])
+  @@map("analytics")
+}
