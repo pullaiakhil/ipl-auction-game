@@ -41,13 +41,13 @@ playerRouter.get('/', async (req: Request, res: Response) => {
       prisma.player.count({ where }),
     ]);
 
-    res.json({
+    return res.json({
       success: true,
       data: players,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch players' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch players' });
   }
 });
 
@@ -66,19 +66,19 @@ playerRouter.get('/top', async (req: Request, res: Response) => {
       },
     });
 
-    res.json({ success: true, data: players });
+    return res.json({ success: true, data: players });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch top players' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch top players' });
   }
 });
 
 // GET /players/:id
 playerRouter.get('/:id', async (req: Request, res: Response) => {
   try {
-    const player = await prisma.player.findUnique({ where: { id: req.params.id } });
+    const player = await prisma.player.findUnique({ where: { id: req.params.id as string } });
     if (!player) return res.status(404).json({ success: false, error: 'Player not found' });
-    res.json({ success: true, data: player });
+    return res.json({ success: true, data: player });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch player' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch player' });
   }
 });

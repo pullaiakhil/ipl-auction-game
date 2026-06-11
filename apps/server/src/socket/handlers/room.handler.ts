@@ -1,4 +1,5 @@
 import { Server, Socket } from 'socket.io';
+import { AiDifficulty } from '@prisma/client';
 import { prisma } from '../../config/database';
 import { logger } from '../../utils/logger';
 import { generateRoomCode } from '../../utils/helpers';
@@ -45,7 +46,7 @@ export function handleRoomEvents(io: Server, socket: Socket): void {
           timerSeconds: data.timerSeconds || 15,
           isPublic: data.isPublic ?? true,
           enableAI: data.enableAI ?? true,
-          aiDifficulty: data.aiDifficulty || 'MEDIUM',
+          aiDifficulty: (data.aiDifficulty as AiDifficulty) || AiDifficulty.MEDIUM,
           status: 'WAITING',
         },
       });

@@ -5,7 +5,7 @@ export const matchRouter = Router();
 // POST /matches/simulate
 matchRouter.post('/simulate', async (req: Request, res: Response) => {
   try {
-    const { team1Id, team2Id, venue, pitchType } = req.body;
+    const { venue } = req.body;
 
     // Simplified match simulation
     const team1Score = Math.floor(Math.random() * 80) + 120;
@@ -128,13 +128,13 @@ matchRouter.post('/simulate', async (req: Request, res: Response) => {
       },
     };
 
-    res.json({ success: true, data: result });
+    return res.json({ success: true, data: result });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Match simulation failed' });
+    return res.status(500).json({ success: false, error: 'Match simulation failed' });
   }
 });
 
 // GET /matches/:id
 matchRouter.get('/:id', async (req: Request, res: Response) => {
-  res.json({ success: true, data: { id: req.params.id, status: 'COMPLETED' } });
+  return res.json({ success: true, data: { id: req.params.id, status: 'COMPLETED' } });
 });

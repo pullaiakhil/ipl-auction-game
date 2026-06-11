@@ -385,8 +385,8 @@ export class MatchEngine {
     phase: MatchPhase,
     target: number | undefined,
     currentScore: number,
-    ballNumber: number,
-    wickets: number
+    _ballNumber: number,
+    _wickets: number
   ): BallOutcome {
     // Base probabilities
     const battingSkill = (batsman.battingRating || 50) / 100;
@@ -542,7 +542,7 @@ export class MatchEngine {
     return available[Math.floor(Math.random() * available.length)];
   }
 
-  private decideToss(team: MatchTeam): TossDecision {
+  private decideToss(_team: MatchTeam): TossDecision {
     // Most T20 teams prefer chasing
     return Math.random() < 0.65 ? 'BOWL' : 'BAT';
   }
@@ -572,8 +572,8 @@ export class MatchEngine {
   private selectPlayerOfMatch(
     innings1: InningsResult,
     innings2: InningsResult,
-    team1: MatchTeam,
-    team2: MatchTeam
+    _team1: MatchTeam,
+    _team2: MatchTeam
   ): { id: string; name: string; performance: string } {
     let bestScore = 0;
     let best = { id: '', name: '', performance: '' };

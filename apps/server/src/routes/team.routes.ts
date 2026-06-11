@@ -7,19 +7,19 @@ export const teamRouter = Router();
 teamRouter.get('/', async (_req: Request, res: Response) => {
   try {
     const teams = await prisma.team.findMany({ orderBy: { name: 'asc' } });
-    res.json({ success: true, data: teams });
+    return res.json({ success: true, data: teams });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch teams' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch teams' });
   }
 });
 
 // GET /teams/:id
 teamRouter.get('/:id', async (req: Request, res: Response) => {
   try {
-    const team = await prisma.team.findUnique({ where: { id: req.params.id } });
+    const team = await prisma.team.findUnique({ where: { id: req.params.id as string } });
     if (!team) return res.status(404).json({ success: false, error: 'Team not found' });
-    res.json({ success: true, data: team });
+    return res.json({ success: true, data: team });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch team' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch team' });
   }
 });

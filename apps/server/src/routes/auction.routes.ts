@@ -28,9 +28,9 @@ auctionRouter.post('/', authenticateToken, async (req: Request, res: Response) =
       },
     });
 
-    res.json({ success: true, data: room });
+    return res.json({ success: true, data: room });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to create auction room' });
+    return res.status(500).json({ success: false, error: 'Failed to create auction room' });
   }
 });
 
@@ -43,9 +43,9 @@ auctionRouter.get('/', async (_req: Request, res: Response) => {
       take: 20,
       include: { _count: { select: { participants: true } } },
     });
-    res.json({ success: true, data: rooms });
+    return res.json({ success: true, data: rooms });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch rooms' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch rooms' });
   }
 });
 
@@ -53,16 +53,16 @@ auctionRouter.get('/', async (_req: Request, res: Response) => {
 auctionRouter.get('/:id', async (req: Request, res: Response) => {
   try {
     const room = await prisma.auctionRoom.findUnique({
-      where: { id: req.params.id },
+      where: { id: req.params.id as string },
       include: {
         participants: true,
         _count: { select: { auctionPlayers: true } },
       },
     });
     if (!room) return res.status(404).json({ success: false, error: 'Room not found' });
-    res.json({ success: true, data: room });
+    return res.json({ success: true, data: room });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch room' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch room' });
   }
 });
 
@@ -70,13 +70,13 @@ auctionRouter.get('/:id', async (req: Request, res: Response) => {
 auctionRouter.get('/:id/results', async (req: Request, res: Response) => {
   try {
     const results = await prisma.auctionPlayer.findMany({
-      where: { auctionRoomId: req.params.id, status: 'SOLD' },
+      where: { auctionRoomId: req.params.id as string, status: 'SOLD' },
       include: { player: true },
       orderBy: { soldPrice: 'desc' },
     });
-    res.json({ success: true, data: results });
+    return res.json({ success: true, data: results });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to fetch results' });
+    return res.status(500).json({ success: false, error: 'Failed to fetch results' });
   }
 });
 

@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { AuctionEngine, AuctionPhase, AuctionParticipant, AuctionPlayer } from '../../engine/auction/AuctionEngine';
+import { AuctionEngine, AuctionPhase, AuctionPlayer } from '../../engine/auction/AuctionEngine';
 import { AIManager, AIPersonality } from '../../engine/ai/AIManager';
 import { prisma } from '../../config/database';
 import { logger } from '../../utils/logger';
@@ -11,9 +11,6 @@ const aiManagers = new Map<string, AIManager>();
 const AI_PERSONALITIES: AIPersonality[] = ['AGGRESSIVE', 'BALANCED', 'VALUE_SEEKER', 'SQUAD_FILLER', 'MONEYBALL'];
 
 export function handleAuctionEvents(io: Server, socket: Socket): void {
-  const userId = (socket as any).userId;
-  const userName = (socket as any).userName;
-
   socket.on('auction:start', async (data: { roomId: string }, callback: (response: any) => void) => {
     try {
       const roomData = rooms.get(data.roomId);
@@ -109,7 +106,7 @@ export function handleAuctionEvents(io: Server, socket: Socket): void {
         orderBy: [{ isMarquee: 'desc' }, { overallRating: 'desc' }],
       });
 
-      const auctionPlayers: AuctionPlayer[] = players.map((p, idx) => ({
+      const auctionPlayers: AuctionPlayer[] = players.map((p) => ({
         id: p.id,
         playerId: p.id,
         name: p.name,
@@ -306,7 +303,7 @@ function wireEngineEvents(io: Server, engine: AuctionEngine, roomId: string, aiM
   });
 }
 
-function triggerAIBids(io: Server, engine: AuctionEngine, roomId: string, aiManager: AIManager): void {
+function triggerAIBids(io: Server, engine: AuctionEngine, _roomId: string, aiManager: AIManager): void {
   const state = engine.getPublicState();
   if (!state.currentPlayer) return;
 

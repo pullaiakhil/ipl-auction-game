@@ -455,28 +455,6 @@ export class AuctionEngine extends EventEmitter {
     }
   }
 
-  private goingOnce(): void {
-    this.state.phase = AuctionPhase.GOING_ONCE;
-    this.state.timer = 5;
-    this.emit('goingOnce', {
-      player: this.state.currentPlayer?.name,
-      bidder: this.state.participants.get(this.state.currentBidder!)?.teamName,
-      amount: this.state.currentBid,
-    });
-    this.startTimer();
-  }
-
-  private goingTwice(): void {
-    this.state.phase = AuctionPhase.GOING_TWICE;
-    this.state.timer = 3;
-    this.emit('goingTwice', {
-      player: this.state.currentPlayer?.name,
-      bidder: this.state.participants.get(this.state.currentBidder!)?.teamName,
-      amount: this.state.currentBid,
-    });
-    this.startTimer();
-  }
-
   private markSold(): void {
     if (!this.state.currentPlayer || !this.state.currentBidder) return;
 

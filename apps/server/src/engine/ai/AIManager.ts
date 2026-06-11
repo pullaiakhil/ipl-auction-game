@@ -181,7 +181,6 @@ export class AIManager {
     profile: AIProfile,
     needs: SquadNeeds
   ): number {
-    const slotsRemaining = 25 - participant.players.length;
     const minNeeded = Math.max(0, 18 - participant.players.length);
     const budgetForMinSlots = minNeeded * 20; // Reserve 20L per remaining min slot
     const availableBudget = Math.max(0, participant.budget - budgetForMinSlots);

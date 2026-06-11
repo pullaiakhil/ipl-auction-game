@@ -18,17 +18,19 @@ export function verifyToken(token: string): TokenPayload | null {
   }
 }
 
-export function authenticateToken(req: Request, res: Response, next: NextFunction) {
+export function authenticateToken(req: Request, res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
   if (!token) {
-    return res.status(401).json({ success: false, error: 'Authentication required' });
+    res.status(401).json({ success: false, error: 'Authentication required' });
+    return;
   }
 
   const decoded = verifyToken(token);
   if (!decoded) {
-    return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+    res.status(401).json({ success: false, error: 'Invalid or expired token' });
+    return;
   }
 
   (req as any).userId = decoded.userId;
@@ -37,9 +39,10 @@ export function authenticateToken(req: Request, res: Response, next: NextFunctio
   next();
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
   if ((req as any).userRole !== 'ADMIN') {
-    return res.status(403).json({ success: false, error: 'Admin access required' });
+    res.status(403).json({ success: false, error: 'Admin access required' });
+    return;
   }
   next();
 }

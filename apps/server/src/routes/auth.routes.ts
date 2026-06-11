@@ -31,9 +31,9 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     });
 
     const token = generateToken(user);
-    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: 0, totalWins: 0, rating: 1000 } });
+    return res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: 0, totalWins: 0, rating: 1000 } });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Registration failed' });
+    return res.status(500).json({ success: false, error: 'Registration failed' });
   }
 });
 
@@ -50,9 +50,9 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     if (!valid) return res.status(401).json({ success: false, error: 'Invalid credentials' });
 
     const token = generateToken(user);
-    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: user.totalAuctions, totalWins: user.totalWins, rating: user.rating } });
+    return res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: user.totalAuctions, totalWins: user.totalWins, rating: user.rating } });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Login failed' });
+    return res.status(500).json({ success: false, error: 'Login failed' });
   }
 });
 
@@ -70,9 +70,9 @@ authRouter.post('/guest', async (_req: Request, res: Response) => {
     });
 
     const token = generateToken({ ...user, isGuest: true });
-    res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: 0, totalWins: 0, rating: 1000 } });
+    return res.json({ success: true, token, user: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: 0, totalWins: 0, rating: 1000 } });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Guest login failed' });
+    return res.status(500).json({ success: false, error: 'Guest login failed' });
   }
 });
 
@@ -81,8 +81,8 @@ authRouter.get('/me', authenticateToken, async (req: Request, res: Response) => 
   try {
     const user = await prisma.user.findUnique({ where: { id: (req as any).userId } });
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-    res.json({ success: true, data: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: user.totalAuctions, totalWins: user.totalWins, rating: user.rating } });
+    return res.json({ success: true, data: { id: user.id, name: user.name, email: user.email, role: user.role, totalAuctions: user.totalAuctions, totalWins: user.totalWins, rating: user.rating } });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to get user' });
+    return res.status(500).json({ success: false, error: 'Failed to get user' });
   }
 });
