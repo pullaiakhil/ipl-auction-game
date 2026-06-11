@@ -67,7 +67,9 @@ export default function AuctionRoomPage() {
   const [remainingPlayersList, setRemainingPlayersList] = useState<AuctionPlayer[]>([]);
   
   // Right panel tabs and filters
-  const [activeTab, setActiveTab] = useState<'bids' | 'chat' | 'pool'>('bids');
+ const [activeTab, setActiveTab] = useState<
+  'bids' | 'chat' | 'pool' | 'squads'
+>('bids');
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [nationalityFilter, setNationalityFilter] = useState('ALL');
