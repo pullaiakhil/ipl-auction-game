@@ -22,7 +22,7 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "prepare": "husky"
+    "prepare": ""
   },
   "devDependencies": {
     "husky": "^9.1.7",
