@@ -6,7 +6,18 @@ const globalForRedis = globalThis as unknown as {
 };
 
 function createRedisClient(): Redis {
-  const client = new Redis(env.REDIS_URL, {
+  let url = env.REDIS_URL;
+  try {
+    if (url.includes('<') || url.includes('>')) {
+      throw new Error("Contains placeholder brackets");
+    }
+    new URL(url);
+  } catch (err) {
+    console.error(`⚠️ Redis: Invalid or placeholder REDIS_URL provided: "${url}". Falling back to default "redis://127.0.0.1:6379".`);
+    url = "redis://127.0.0.1:6379";
+  }
+
+  const client = new Redis(url, {
     maxRetriesPerRequest: 3,
     retryStrategy(times: number): number | null {
       if (times > 10) {
