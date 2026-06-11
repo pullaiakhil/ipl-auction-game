@@ -303,7 +303,7 @@ function wireEngineEvents(io: Server, engine: AuctionEngine, roomId: string, aiM
   });
 }
 
-function triggerAIBids(io: Server, engine: AuctionEngine, _roomId: string, aiManager: AIManager): void {
+function triggerAIBids(_io: Server, engine: AuctionEngine, _roomId: string, aiManager: AIManager): void {
   const state = engine.getPublicState();
   if (!state.currentPlayer) return;
 

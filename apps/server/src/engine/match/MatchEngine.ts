@@ -385,7 +385,7 @@ export class MatchEngine {
     phase: MatchPhase,
     target: number | undefined,
     currentScore: number,
-    _ballNumber: number,
+    ballNumber: number,
     _wickets: number
   ): BallOutcome {
     // Base probabilities
